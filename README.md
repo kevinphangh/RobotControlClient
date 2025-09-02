@@ -35,8 +35,19 @@ dotnet restore
 
 ## Running the Application
 
+### Full Interactive Menu
 ```bash
 dotnet run
+```
+
+### Simple Status Checker (Connection Test Only)
+```bash
+dotnet run --project . -- SimpleStatusChecker.cs
+```
+Or compile and run directly:
+```bash
+dotnet build
+dotnet bin/Debug/net8.0/RobotControlClient.dll
 ```
 
 ## Usage

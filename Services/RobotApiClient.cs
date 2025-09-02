@@ -22,6 +22,20 @@ namespace RobotControlClient.Services
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         }
 
+        // Connection Test
+        public async Task<bool> TestConnection()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("/health");
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         // System Endpoints
         public async Task<ApiResponse> EmergencyStop(bool enabled)
         {
