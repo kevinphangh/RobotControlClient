@@ -1,117 +1,136 @@
-# Robot Control Client
+# Robot Control Client - Dual System Monitor
 
-A .NET C# console application for communicating with the Robot Control System API.
+A simplified .NET console application for monitoring Robot Control System and SmartPack API.
+
+## 🚀 Quick Start
+
+```bash
+# Clone/navigate to project
+cd RobotControlClient
+
+# Build once
+dotnet build
+
+# Run interactive monitor
+dotnet run
+
+# Run connection test
+dotnet run -- SimpleStatusChecker.cs
+```
 
 ## Features
 
-- Full REST API client for robot control
-- Real-time WebSocket connection for status updates
-- Interactive console menu for all operations
-- Support for:
-  - System control (emergency stop, worker management)
-  - Robot motion (homing, direct movement, queued movements)
-  - Box operations (move boxes between shelves)
-  - Inventory management (shelf CRUD operations)
-  - Task queue management
-  - Gripper/vacuum control
-  - Smart task creation from barcodes
+**Monitoring (GET requests)**
+- ✅ Robot system status with real-time WebSocket updates
+- ✅ SmartPack external system status
+- ✅ Task queue monitoring
+- ✅ Shelf inventory viewing
+
+**Essential Controls (minimal)**
+- ✅ Emergency stop/clear
+- ✅ Robot homing
+- ✅ Worker enable/disable
 
 ## Prerequisites
 
 - .NET 8.0 SDK or later
-- Robot Control System API running on `http://localhost:8000`
-
-## Installation
-
-1. Navigate to the project directory:
-```bash
-cd RobotControlClient
-```
-
-2. Restore NuGet packages:
-```bash
-dotnet restore
-```
+- Robot API running on `http://localhost:8000`
+- SmartPack API access (external)
 
 ## Running the Application
 
-### Full Interactive Menu
+### Option 1: Interactive Monitor
 ```bash
 dotnet run
 ```
 
-### Simple Status Checker (Connection Test Only)
+**Menu Options:**
+1. Robot System Status - View robot position, hardware, worker status
+2. SmartPack System Status - Check external system transfers
+3. Full Connection Test - Test both systems comprehensively
+4. Emergency Stop - Activate emergency stop
+5. Clear Emergency Stop - Release emergency stop
+6. Home Robot - Initialize robot position
+7. Enable Worker - Start task processing
+8. Disable Worker - Stop task processing
+0. Exit
+
+### Option 2: Connection Tester
 ```bash
-dotnet run --project . -- SimpleStatusChecker.cs
-```
-Or compile and run directly:
-```bash
-dotnet build
-dotnet bin/Debug/net8.0/RobotControlClient.dll
+dotnet run -- SimpleStatusChecker.cs
 ```
 
-## Usage
+Tests both systems and displays:
+- Robot API connection status
+- System hardware/position info
+- SmartPack API connection
+- Active transfers count
+- WebSocket real-time updates
 
-The application presents an interactive menu with the following options:
+## Project Structure
 
-1. **System Status** - Get comprehensive robot and system status
-2. **Emergency Stop** - Activate emergency stop
-3. **Clear Emergency Stop** - Clear emergency stop state
-4. **Home Robot (Full)** - Perform full homing calibration (2-3 minutes)
-5. **Home Robot (Quick)** - Perform quick homing reset (30 seconds)
-6. **Move to Position** - Direct synchronous movement to X/Y/Z position
-7. **Queue Movement** - Queue asynchronous movement task
-8. **Enable/Disable Worker** - Control background task processing
-9. **Get All Tasks** - View all queued and completed tasks
-10. **Move Box** - Move box between shelves (by ID or coordinates)
-11. **Manage Shelves** - Add, list, find, or delete shelf locations
-12. **Enable/Disable Vacuum** - Control vacuum gripper
-13. **Smart Task** - Create task from barcode scan
-14. **Cleanup Stuck Tasks** - Remove old stuck tasks
-
-## WebSocket Events
-
-The application automatically connects to the WebSocket endpoint and displays real-time updates:
-- Position updates
-- Task progress
-- Task completion/failure
-- System errors
-- Connection status
+```
+/
+├── src/                    # Source code
+│   ├── Program.cs         # Interactive monitor
+│   ├── SimpleStatusChecker.cs
+│   ├── Models/           # Data models
+│   └── Services/         # API clients
+├── docs/                  # Documentation
+│   └── api/              # API references
+└── README.md             # This file
+```
 
 ## Configuration
 
-To connect to a different server, modify the base URLs in `Program.cs`:
+To connect to different servers, modify URLs in `src/Program.cs`:
 
 ```csharp
-var apiClient = new RobotApiClient("http://your-server:8000");
-var wsClient = new RobotWebSocketClient("ws://your-server:8000");
+var apiClient = new RobotApiClient("http://your-robot:8000");
+var smartPackClient = new SmartPackApiClient("https://your-smartpack-api");
 ```
 
-## Architecture
+## WebSocket Events
 
-- **Models** - Data models for API requests/responses
-- **Services/RobotApiClient.cs** - HTTP client for REST API
-- **Services/RobotWebSocketClient.cs** - WebSocket client for real-time updates
-- **Program.cs** - Main application with interactive menu
+Automatic real-time updates:
+- Position changes
+- Emergency stop status
+- Worker state changes
+- System errors
 
-## Error Handling
+## Example Usage
 
-The application includes error handling for:
-- Connection failures
-- Invalid input
-- API errors
-- WebSocket disconnections
+```bash
+# First time setup
+dotnet build              # Build once
+dotnet run                # Start monitor
 
-## Example Workflow
-
-1. Start the application
-2. The system will automatically connect to WebSocket
-3. Select option 4 to home the robot (first time setup)
-4. Select option 8 to enable the worker
-5. Use option 11 to move boxes between shelves
-6. Monitor real-time updates in the console
+# In the menu:
+# 1. Press '3' for full connection test
+# 2. Press '6' to home robot (if needed)
+# 3. Press '1' to check robot status
+# 4. Press '2' to check SmartPack status
+```
 
 ## Dependencies
 
-- Newtonsoft.Json (13.0.3) - JSON serialization
-- System.Net.WebSockets.Client (4.3.2) - WebSocket support
+- **Newtonsoft.Json** (13.0.3) - JSON serialization
+- **System.Net.WebSockets.Client** (4.3.2) - WebSocket support
+
+## Troubleshooting
+
+**Build errors:** 
+```bash
+dotnet clean
+dotnet restore
+dotnet build
+```
+
+**Connection failed:**
+- Verify Robot API is running on port 8000
+- Check network/firewall settings
+- Try the SimpleStatusChecker for diagnostics
+
+## License
+
+MIT
