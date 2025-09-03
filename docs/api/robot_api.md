@@ -14,7 +14,6 @@
   - [Inventory Management](#inventory-management)
   - [Gripper Control](#gripper-control)
   - [General Endpoints](#general-endpoints)
-- [WebSocket Protocol](#websocket-protocol)
 - [Data Models](#data-models)
 - [Error Codes](#error-codes)
 - [Example Workflows](#example-workflows)
@@ -26,7 +25,7 @@ The Robot Control System API provides comprehensive control over a 3-axis wareho
 - Vacuum gripper for box handling
 - Barcode scanning capabilities
 - Task queue management
-- Real-time status monitoring via WebSocket
+- Status monitoring via REST API
 
 ## Base Configuration
 
@@ -382,9 +381,9 @@ curl -X POST "http://localhost:8000/robot/motion/move_z_relative" \
   -d '{"distance_mm": -30}'
 ```
 
-**Note:** Z-axis has inverted coordinates:
-- Z=0 (MIN) = Fully extended at shelf
-- Z=MAX = Fully retracted away from shelf
+**Note:** Z-axis coordinate system:
+- Z=0 (MIN) = Fully extended at shelf (picking position)
+- Z=MAX = Fully retracted away from shelf (safe position)
 
 ---
 
@@ -900,140 +899,6 @@ curl -X GET "http://localhost:8000/health"
 }
 ```
 
-## WebSocket Protocol
-
-### Connection
-`ws://localhost:8000/robot/ws`
-
-Establishes WebSocket connection for real-time updates.
-
-### Connection Flow
-1. Client connects to WebSocket endpoint
-2. Server sends initial status immediately
-3. Server begins sending updates on state changes
-4. Heartbeat sent every 30 seconds to maintain connection
-
-### Message Types
-
-#### Status Update
-Sent when robot state changes or every 5 seconds with position updates.
-
-```json
-{
-  "type": "status",
-  "hardware_initialized": true,
-  "homed": true,
-  "emergency_stopped": false,
-  "worker_enabled": true,
-  "position": {
-    "x": 500.0,
-    "y": 300.0,
-    "z": 100.0
-  },
-  "workspace_bounds": {
-    "min_x": 0,
-    "max_x": 1337.0,
-    "min_y": 0,
-    "max_y": 1184.4
-  },
-  "vacuum_enabled": false,
-  "firmware_version": "v2.0.0",
-  "timestamp": 1700000000
-}
-```
-
-#### Task Updates
-```json
-{
-  "type": "task_update",
-  "task_id": "123e4567-e89b-12d3-a456-426614174000",
-  "status": "in_progress",
-  "progress": 50,
-  "message": "Moving to destination"
-}
-```
-
-#### Task Completion
-```json
-{
-  "type": "task_completed",
-  "task_id": "123e4567-e89b-12d3-a456-426614174000",
-  "result": "success",
-  "message": "Box moved successfully"
-}
-```
-
-#### Task Failure
-```json
-{
-  "type": "task_failed",
-  "task_id": "123e4567-e89b-12d3-a456-426614174000",
-  "error": "Vacuum grip lost",
-  "details": "Pressure dropped below threshold"
-}
-```
-
-#### Error Notification
-```json
-{
-  "type": "error",
-  "severity": "warning|error|critical",
-  "message": "Error description",
-  "code": "ERROR_CODE"
-}
-```
-
-#### Heartbeat
-```json
-{
-  "type": "heartbeat",
-  "timestamp": 1700000000
-}
-```
-
-### WebSocket Client Example (JavaScript)
-```javascript
-const ws = new WebSocket('ws://localhost:8000/robot/ws');
-
-ws.onopen = () => {
-  console.log('Connected to robot');
-};
-
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  
-  switch(data.type) {
-    case 'status':
-      updateRobotStatus(data);
-      break;
-    case 'task_update':
-      updateTaskProgress(data);
-      break;
-    case 'task_completed':
-      handleTaskCompletion(data);
-      break;
-    case 'task_failed':
-      handleTaskFailure(data);
-      break;
-    case 'error':
-      displayError(data);
-      break;
-    case 'heartbeat':
-      // Connection is alive
-      break;
-  }
-};
-
-ws.onerror = (error) => {
-  console.error('WebSocket error:', error);
-};
-
-ws.onclose = () => {
-  console.log('Disconnected from robot');
-  // Implement reconnection logic
-};
-```
-
 ## Data Models
 
 ### Request Models
@@ -1252,8 +1117,7 @@ curl -X POST "http://localhost:8000/robot/queue/tasks/smart_task" \
 #    - Creates movement task
 #    - Executes pick and place operation
 
-# 3. Monitor via WebSocket for real-time updates
-# Or poll task status
+# 3. Monitor task status
 curl -X GET "http://localhost:8000/robot/queue/tasks"
 ```
 
@@ -1279,9 +1143,7 @@ curl -X POST "http://localhost:8000/robot/motion/queue_move" \
 
 ### Recommended Limits
 - Maximum concurrent API requests: 100
-- WebSocket connections per client: 1
 - Task queue maximum size: 1000
-- Position polling frequency: Every 5 seconds
 - Emergency stop response time: < 100ms
 
 ### Performance Characteristics
@@ -1290,7 +1152,6 @@ curl -X POST "http://localhost:8000/robot/motion/queue_move" \
 - Average box movement: 15-30 seconds
 - Position query response: < 200ms
 - Status query response: < 100ms (with quick_cpu=true)
-- WebSocket latency: < 50ms
 
 ## Security Considerations
 
@@ -1326,14 +1187,14 @@ For issues, bug reports, or feature requests:
 
 ## Appendix: Z-Axis Coordinate System
 
-**CRITICAL:** The Z-axis uses an inverted coordinate system:
+**CRITICAL:** The Z-axis coordinate system:
 
 ```
-Z = 0 (MIN) → EXTENDED at shelf (dangerous)
-Z = MAX → RETRACTED away from shelf (safe)
+Z = 0 (MIN) → EXTENDED at shelf (picking position)
+Z = MAX → RETRACTED away from shelf (safe position)
 
-DECREASING Z = Moving TOWARD shelf
-INCREASING Z = Moving AWAY from shelf
+DECREASING Z = Moving TOWARD shelf (extending)
+INCREASING Z = Moving AWAY from shelf (retracting)
 ```
 
 ### Key Z Positions
